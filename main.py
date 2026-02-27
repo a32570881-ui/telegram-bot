@@ -158,7 +158,7 @@ async def admin_decision(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ================== MAIN ==================
-async def main():
+def main():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -168,9 +168,8 @@ async def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     print("Bot is running...")
-
-    await app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
