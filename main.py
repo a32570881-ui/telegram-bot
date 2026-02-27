@@ -187,7 +187,9 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     print("Bot is running...")
-    app.run_polling()
+
+    import asyncio
+    asyncio.run(app.run_polling())
 
 
 if __name__ == "__main__":
