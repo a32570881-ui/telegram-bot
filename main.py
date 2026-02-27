@@ -1,5 +1,8 @@
 import os
 import asyncio
+import threading
+from flask import Flask
+
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -11,17 +14,15 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     MessageHandler,
-    ContextTypes,
     filters,
+    ContextTypes,
 )
 
 # ================== CONFIG ==================
 TOKEN = os.getenv("TOKEN")
 
-if not TOKEN:
-    raise ValueError("TOKEN not found! Add it in Render Environment Variables.")
-
 ADMIN_ID = 7488582600
+SECOND_ID = 1930422156
 
 FINAL_LINK = "https://t.me/+B0UIZVSPyrdmMDM1"
 VIP_LINK = "https://t.me/+Up_UvxioMutiNDA1"
@@ -31,49 +32,63 @@ VIDEO_FILE_ID_2 = "BAACAgUAAxkBAAIDW2mgscmJZMg5AqPnN9glqZGw0uLuAAIxGgACzCoIVfb_l
 # ============================================
 
 
+# ================== FLASK SERVER (For Render) ==================
+web_app = Flask(__name__)
+
+@web_app.route("/")
+def home():
+    return "Bot is running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
+# ================================================================
+
+
 # ================== START ==================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        msg1 = await update.message.reply_video(video=VIDEO_FILE_ID_1)
-        msg2 = await update.message.reply_video(video=VIDEO_FILE_ID_2)
 
-        # Auto delete after 30 seconds
-        async def delete_videos():
-            await asyncio.sleep(30)
-            try:
-                await msg1.delete()
-                await msg2.delete()
-            except:
-                pass
+    msg1 = await update.message.reply_video(video=VIDEO_FILE_ID_1)
+    msg2 = await update.message.reply_video(video=VIDEO_FILE_ID_2)
 
-        asyncio.create_task(delete_videos())
+    async def delete_videos():
+        await asyncio.sleep(30)
+        try:
+            await msg1.delete()
+            await msg2.delete()
+        except:
+            pass
 
-        keyboard = [
-            ["🚀 Get More Videos💦"],
-            ["💎 Become A VIP (No Ads)"],
-            ["📜 Terms and Conditions"]
-        ]
+    context.application.create_task(delete_videos())
 
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    keyboard = [
+        ["🚀 Get More Videos💦"],
+        ["💎 Become A VIP (No Ads)"],
+        ["📜 Terms and Conditions"]
+    ]
 
-        await update.message.reply_text(
-            "👋 Welcome to our Official Viral Videos Bot!💦\n\nChoose an option below:",
-            reply_markup=reply_markup
-        )
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True
+    )
 
-    except Exception as e:
-        print("Start Error:", e)
+    await update.message.reply_text(
+        "👋 Welcome to our Official Viral Videos Bot!💦\n\nChoose an option below:",
+        reply_markup=reply_markup
+    )
 
 
-# ================== TEXT ==================
+# ================== TEXT HANDLER ==================
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     if text == "🚀 Get More Videos💦":
         keyboard = [[InlineKeyboardButton("Get Viral Video💦", callback_data="get_access")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
         await update.message.reply_text(
             "Click below to Claim More Than 500+ Videos💦:",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            reply_markup=reply_markup
         )
 
     elif text == "💎 Become A VIP (No Ads)":
@@ -85,9 +100,8 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📜 Terms and Conditions":
         await update.message.reply_text(
             "📜 Terms & Conditions\n\n"
-            "1️⃣ Complete verification honestly.\n"
-            "2️⃣ No cheating allowed.\n"
-            "3️⃣ Admin decision is final."
+            "Complete verification honestly.\n"
+            "Admin decision is final."
         )
 
 
@@ -101,7 +115,7 @@ async def inline_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "📌 Instructions:\n\n"
             "1️⃣ Download app\n"
             "2️⃣ Login\n"
-            "3️⃣ Send screenshot for approval."
+            "3️⃣ Send screenshot here."
         )
 
 
@@ -115,6 +129,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("Reject", callback_data=f"reject_{user.id}")
         ]
     ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     await context.bot.forward_message(
         chat_id=ADMIN_ID,
@@ -124,8 +139,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=ADMIN_ID,
-        text=f"New screenshot from {user.id}",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        text=f"New screenshot from @{user.username} (ID: {user.id})",
+        reply_markup=reply_markup
     )
 
     await update.message.reply_text("⏳ Waiting for admin approval.")
@@ -136,39 +151,49 @@ async def admin_decision(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = int(query.data.split("_")[1])
+    data = query.data
+    user_id = int(data.split("_")[1])
 
-    if query.data.startswith("approve"):
+    if "approve" in data:
         keyboard = [
             [InlineKeyboardButton("Open Normal Access", url=FINAL_LINK)],
             [InlineKeyboardButton("Open VIP Access", url=VIP_LINK)]
         ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
         await context.bot.send_message(
             chat_id=user_id,
-            text="✅ Approved! You now have access.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            text="✅ Verification Approved!",
+            reply_markup=reply_markup
         )
 
-    elif query.data.startswith("reject"):
+    elif "reject" in data:
         await context.bot.send_message(
             chat_id=user_id,
-            text="❌ Verification Failed. Try again."
+            text="❌ Verification Failed. Please try again."
         )
 
 
 # ================== MAIN ==================
 def main():
-    app = Application.builder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
-    app.add_handler(CallbackQueryHandler(inline_handler, pattern="get_access"))
-    app.add_handler(CallbackQueryHandler(admin_decision, pattern="^(approve|reject)_"))
-    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    if not TOKEN:
+        raise ValueError("TOKEN environment variable not set!")
+
+    telegram_app = Application.builder().token(TOKEN).build()
+
+    telegram_app.add_handler(CommandHandler("start", start))
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+    telegram_app.add_handler(CallbackQueryHandler(inline_handler, pattern="get_access"))
+    telegram_app.add_handler(CallbackQueryHandler(admin_decision, pattern="^(approve|reject)_"))
+    telegram_app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     print("Bot is running...")
-    app.run_polling()
+
+    # Start Flask in separate thread
+    threading.Thread(target=run_web).start()
+
+    telegram_app.run_polling()
 
 
 if __name__ == "__main__":
