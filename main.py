@@ -112,10 +112,13 @@ async def inline_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "get_access":
         await query.message.reply_text(
-            "📌 Instructions:\n\n"
-            "1️⃣ Download app\n"
-            "2️⃣ Login\n"
-            "3️⃣ Send screenshot here."
+             "📌 Instructions:\n\n"
+            "1️⃣ Download FlixFox app:\n"
+            "https://filmm.me/SyfNVrge\n\n"
+            "2️⃣ Login into the app.\n"
+            "3️⃣ Take screenshot with login timing visible.\n"
+            "4️⃣ Send screenshot here for verification.\n"
+            "PLEASE DO THE PROCESS (SUPPORT THE ADMIN....)"
         )
 
 
@@ -198,3 +201,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
