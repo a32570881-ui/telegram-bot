@@ -94,14 +94,20 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "💎 Become A VIP (No Ads)":
         await update.message.reply_text(
             "💎 VIP ACCESS REQUIREMENT\n\n"
-            "Complete the task and send screenshot for approval."
+            "To unlock VIP membership, you must first complete a Task To Help The Admin.\n\n"
+            "1️⃣ Click 'Start'\n"
+            "2️⃣ Follow instructions\n"
+            "3️⃣ Send screenshot for approval\n\n"
+            "After approval, you will receive both Normal and VIP access links."
         )
 
     elif text == "📜 Terms and Conditions":
         await update.message.reply_text(
-            "📜 Terms & Conditions\n\n"
-            "Complete verification honestly.\n"
-            "Admin decision is final."
+             "📜 Terms & Conditions\n\n"
+            "1️⃣ Complete verification honestly.\n"
+            "2️⃣ Any cheating attempt will be rejected.\n"
+            "3️⃣ Access links are personal.\n"
+            "4️⃣ Admin decision is final."
         )
 
 
@@ -166,14 +172,16 @@ async def admin_decision(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await context.bot.send_message(
             chat_id=user_id,
-            text="✅ Verification Approved!",
+            text="✅ Verification Approved!\n\nYou now have access to both channels.",
             reply_markup=reply_markup
         )
 
     elif "reject" in data:
         await context.bot.send_message(
             chat_id=user_id,
-            text="❌ Verification Failed. Please try again."
+            text="❌ Verification Failed.\n\n"
+                 "You are trying to cheat or you are a pre-existing user.\n"
+                 "Please try again using another device."
         )
 
 
@@ -201,4 +209,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
